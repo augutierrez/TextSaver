@@ -1,0 +1,97 @@
+package com.example.mylearningproject.saver
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
+class TextViewModel(private val stateHandle: SavedStateHandle) : ViewModel() {
+
+    private var restInterface: TextApiService
+
+    private val _listOfSavedText = MutableStateFlow(listOf(SavedText(0, "", "")))
+    val listOfSavedText = _listOfSavedText.asStateFlow()
+    private val errorHandler = CoroutineExceptionHandler { _, exception ->
+        exception.printStackTrace()
+    }
+
+    init {
+        val retrofit = Retrofit.Builder()
+            .addConverterFactory(GsonConverterFactory.create())
+            .baseUrl("https://textsaver-b21d8-default-rtdb.firebaseio.com/")
+            .build()
+        restInterface = retrofit.create(TextApiService::class.java)
+
+        getSavedText()
+    }
+
+
+    private suspend fun getRemoteSavedText(): List<SavedText> {
+        return withContext(Dispatchers.IO) {
+            restInterface.getSavedText()
+        }
+    }
+
+    private fun getSavedText() {
+        viewModelScope.launch(errorHandler) {
+            val text: List<SavedText> = getRemoteSavedText()
+            _listOfSavedText.value = text
+        }
+//        Log.i("Antonio", "Calling getSavedText")
+//        savedTextCall = restInterface.getSavedText()
+//        savedTextCall.enqueue(object : Callback<List<SavedText>> {
+//            override fun onResponse(
+//                call: Call<List<SavedText>>,
+//                response: Response<List<SavedText>>
+//            ) {
+//                Log.i("Antonio", "Successfully receives saved text")
+//                response.body()?.let {
+//                    Log.i("Antonio", "body: $it")
+//                    _listOfSavedText.value = it
+//                }
+//            }
+//
+//            override fun onFailure(call: Call<List<SavedText>>, t: Throwable) {
+//                Log.e("Antonio", "API call failed", t)
+//            }
+//        })
+    }
+
+    /////////////////////////////////
+    val saverState = TextSaverState()
+
+    fun onSaveState(string: String) {
+        stateHandle[KEY] = string
+        saverState.onSave(string)
+    }
+
+    companion object {
+        const val KEY = "savedText"
+    }
+}
+
+
+@Composable
+fun rememberSaverState(): TextSaverState {
+    return rememberSaveable(saver = SaverStateSaver) {
+        TextSaverState()
+    }
+}
+
+
+private val SaverStateSaver = Saver<TextSaverState, String>(
+    save = { it.currentText },
+    restore = { restoredText ->
+        TextSaverState().apply { onTextChange(restoredText) }
+    }
+)
