@@ -1,6 +1,7 @@
 package com.example.mylearningproject.saver
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -9,7 +10,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class TextDescriptionViewModel() : ViewModel() {
+class TextDescriptionViewModel(private val stateHandle: SavedStateHandle) : ViewModel() {
     private var restInterface: TextApiService
     val state = mutableStateOf<SavedText?>(null)
     init {
@@ -19,8 +20,9 @@ class TextDescriptionViewModel() : ViewModel() {
             .build()
         restInterface = retrofit.create(TextApiService::class.java)
 
+        val id = stateHandle.get<Int>("text_id") ?: 0
         viewModelScope.launch {
-            val savedText = getTextDescription(2)
+            val savedText = getTextDescription(id)
             state.value = savedText
         }
 
