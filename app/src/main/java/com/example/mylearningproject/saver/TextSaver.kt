@@ -43,9 +43,8 @@ fun TextSaver(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         val vmText by saverState.collectAsState()
-
         var index by remember { mutableIntStateOf(0) }
-        val savedText = vmText.getOrNull(index) ?: SavedText(0, "", "")
+        val savedText = vmText.getOrNull(index) ?: SavedText(0, "", "", false)
         LaunchedEffect(savedText) {
             Log.i("Antonio", "savedText: ${savedText.text}")
         }
@@ -94,6 +93,6 @@ fun Modifier.applyIf(boolean: Boolean, modification: Modifier.() -> Modifier): M
 @Composable
 fun GreetingPreview() {
     MyLearningProjectTheme {
-        TextSaver(MutableStateFlow(listOf(SavedText(0, "hi", "hello"))))
+        TextSaver(MutableStateFlow(listOf(SavedText(0, "hi", "hello", false))))
     }
 }

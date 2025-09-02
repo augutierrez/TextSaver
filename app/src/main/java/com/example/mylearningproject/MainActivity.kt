@@ -23,10 +23,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +38,7 @@ import androidx.navigation.navDeepLink
 import com.example.mylearningproject.saver.SavedText
 import com.example.mylearningproject.saver.TextDetails
 import com.example.mylearningproject.saver.TextViewModel
+import com.example.mylearningproject.saver.applyIf
 import com.example.mylearningproject.ui.theme.MyLearningProjectTheme
 
 class MainActivity : ComponentActivity() {
@@ -120,10 +117,14 @@ fun Texts(onItemClick: (id: Int) -> Unit) {
         ) {
             itemsIndexed(list) { index, item ->
                 TextItem(
-                    Modifier
+                    modifier = Modifier
                         .clip(cornerShape)
                         .border(BorderStroke(1.dp, Color.Gray), shape = cornerShape)
-                        .background(Color.LightGray), item, index == list.lastIndex, onItemClick
+                        .background(Color.LightGray),
+                    item = item,
+                    isLastIndex = index == list.lastIndex,
+                    onClick = onItemClick,
+                    onPinned = vm::onPinned
                 )
             }
         }
@@ -137,26 +138,28 @@ private fun TextItem(
     item: SavedText,
     isLastIndex: Boolean,
     onClick: (id: Int) -> Unit,
+    onPinned: (id: Int, isPinned: Boolean) -> Unit,
 ) {
-    var isPinned by remember { mutableStateOf(false) }
+    val isPinned = item.isPinned
     Box(
         modifier
             .fillMaxWidth()
-            .clickable { onClick(item.id) },
+            .clickable { onClick(item.id) }
+            .applyIf(isPinned) { background(Color.Cyan) },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = item.text,
             modifier = Modifier
-                .padding(vertical = 5.dp),
+                .padding(vertical = 15.dp),
         )
-//        Checkbox(
-//            isPinned,
-//            onCheckedChange = { isChecked -> isPinned = isChecked },
-//            Modifier
-//                .align(Alignment.CenterEnd)
-//                .padding(end = 5.dp)
-//        )
+        Checkbox(
+            checked = isPinned,
+            onCheckedChange = { isChecked -> onPinned(item.id, isChecked) },
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 5.dp),
+        )
     }
     if (!isLastIndex) {
         Spacer(modifier = Modifier.height(1.dp))
